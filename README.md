@@ -19,7 +19,7 @@ The remainder of this document provides instructions for how to use the C# scrip
 
 This short video sequence demonstrates the use of the TrainGen scripts to automatically move the main camera around designated objects in the scene. In this demonstration the objects are smoke trails representing the early stages of an uncontrolled fire. Each time the camera is moved an image is captured and saved in one of two directories, one reserved for scenes where the object is present, and the other for where it is not. Both types of images are used to train a Deep Learning network and verify correct output when the particular object is not present. The position of the camera and parameters for appearance of the smoke are randomly modified between images using predefined ranges for each value modified.
 
-In the beginning of the video the main camera is shown moving to new positions with short pauses between each movement.  This occurs because the camera movements are triggered when the user presses the right shift key on the keyboard.  Later each movement occurs without being triggered and each new movement occurs without delay.  This generates images as fast as possible while they are saved in their respective directories.  
+In the beginning of the video the main camera is shown moving to new positions with short pauses between each movement.  This occurs because the camera movements are triggered when the user presses the right-shift key on the keyboard.  Later, each movement occurs without being triggered and each new movement occurs without delay.  This generates images as fast as possible while they are saved in their respective directories.  
 
 If a smoke trail appears in the scene, the smoke particles flow for a randomly generated time period before the image is captured.  This allows time for changes in the properties of the particle system used to generate the smoke trail to appear on screen.
 
@@ -32,21 +32,21 @@ TrainGen works by capturing images of objects relative to a pivot point.  Whenev
 
 The pivot point is used to rotate the camera. You can imagine the pivot point as the body of a person holding a long selfie stick used to change the orientation of a camera on the end of the stick. More information on how the pivot point can be used to control camera rotation is in a YouTube video called "Simple Mouse Orbit Camera Control", linked in the Appendix section.
 
-When adding TrainGen to a scene, it is important to establish the desired location of the pivot point relative to the camera.  This is information is saved in certain property variables in the ImageGenerator object, described below.  
+When adding TrainGen to a scene, it is important to establish the desired location of the pivot point relative to the camera.  This information is saved in certain property variables in the ImageGenerator object, described below.  
 
-Every object that will be used for image capture can optionally contain a script that allows the appearance of the object to be randomly modified for each image using the Randomize method. TrainGen contains one example script used to randomize a particle system for a smoke trail, used to simulate the early stages of a forest fire.
+Every object that will be used for image capture can contain an optional script that allows the appearance of the object to be randomly modified for each image using the Randomize method. TrainGen contains one example script used to randomize a particle system for a smoke trail, simulating the early stages of a forest fire.
 
 !["TrainGen Design"](docs/traingen_design_scripts.jpg "TrainGen Design")
 
 # TrainGen Class Documentation
-Documentation for the each of the classes in the TrainGen module is available here: [TODO: Doxygen documentation]. The documentation is generated automatically using Doxygen, run from a shell script [TODO: create script]. 
+Documentation for the each of the classes in the TrainGen module is available here: https://airbrain-org.github.io/traingen/html/. This documentation is generated automatically using Doxygen. 
 
 # Step-by-step Guide to Using TrainGen in Your Unity Project
 This section provides a detailed walk-through of how to integrate the TrainGen scripts into a typical Unity project. No installer is currently provided, so you must manually copy each script file to the Assets directory in the root directory of your Unity project.  
 
 Familiarity with Unity scripting and the associated Unity IDE are assumed. See the Appendix for additional references.
 
-Included below is a list of each C# source file with a brief description. A description of each of the properties defined in each source file is contained in the class documentation.
+Included below is a list of each C# source file with a brief description. A description of each of the properties defined in each source file is contained in the Class Documentation.
 
 **ImageGenerator.cs**
 
@@ -81,37 +81,41 @@ Images will be captured for those objects with a "**Tag**" property that matches
 - Large_Scale_Smoke
 
 ## Step 2: Observation Selection
-Images generated for tagged objects are called "**Observations**". As mentioned above, the tag used must match that of the "**Observed Object Tag**" property of ImageGenerator.  Optionally, a script maybe added to allow the appearance of each observation to be randomized at the beginning of each new image.
+Images generated for tagged objects are called "**Observations**". As mentioned above, the tag used must match that of the "**Observed Object Tag**" property of ImageGenerator.  Optionally, a script may be added to allow the appearance of each observation to be randomized at the beginning of each new image.
 
-In the example shown below, the script "ParticleObservation" (provided with TrainGen) is added to the Large_Scale_Smoke object. The ParticleObservation component is retrieved in the SelectObservation method of ImageGenerator and, if present, the the Randomize method is called.
+In the example shown below, the script "ParticleObservation" (provided with TrainGen) is added to the Large_Scale_Smoke object. The ParticleObservation component is retrieved in the SelectObservation method of ImageGenerator and, if present, the Randomize method is called.
 
 If your observation is a particle system the ParticleObservation.cs script may be added to your object. The way in which each observation is randomized is highly dependent on the type of objects it contains so you will need to examine the source code of ParticleObservation.cs to see if it is applicable.
 
 !["ParticleObservation.cs Inspector"](docs/particle_observation_inspector.jpg "ParticleObservation.cs Inspector")
 
 ## Step 3: Generating Images
-Press the play button in the Unity IDE and then press the right-shift key.  This will cause the camera to move to the first Observation and, if the object is visible, capture an image.  Press the right-shift key again and the camera will move to the next randomly generated position and capture an other image.  This process will continue until the specified number of Observations with visible objects have been captured. Additional images will be captured for the same camera position, but without a visible object.  The number of images captured w/wo visible objects is configured using the "Max Images Per Observation" and "**Visibility Proportion**" properties.
+Press the play button in the Unity IDE and then press the right-shift key.  This will cause the camera to move to the first Observation and, if the object is visible, capture an image.  Press the right-shift key again and the camera will move to the next randomly generated position and capture another image.  This process will continue until the specified number of Observations with visible objects has been captured. Additional images will be captured for the same camera position, but without a visible object.  The number of images captured w/wo visible objects is configured using the "**Max Images Per Observation**" and "**Visibility Proportion**" properties.
 
-Captured images are saved in the "screenshots" directory of the Unity project directory. Images with visible objects are saved in a subdirectory with the same name as the value of the "**Observed Object Tag**" property. Images without visible objects are saved in the "nothing" subdirectory.
+Captured images are saved in the "**screenshots**" directory of the Unity project directory. Images with visible objects are saved in a subdirectory with the same name as the value of the "**Observed Object Tag**" property. Images without visible objects are saved in the "**nothing**" subdirectory.
 
-To allow image generation to proceed automatically without requiring the right-shift key to be pressed for each image, check the "**Enable Auto Image**" property. Uncheck the same property to return to manual image generation.
+To allow image generation to proceed automatically without requiring the right-shift key to be pressed for each image, check the "**Enable Auto Image**" property. Un-check the same property to return to manual image generation.
 
-# Long Term Project Plan
+# Project Plan
+
 ## TrainGen
 Additional enhancements are planned to allow TrainGen to randomly vary other aspects of the scene, including:
 - Automatic creation of smoke on the terrain at a specified density, at random locations
 - Randomization of the weather and lighting
-- Automatic selection of predefined terrains after the required number of images for another terrain have been generated 
-## Use of TrainGen Images to Seed a Generative Adversarial Network (GAN)
-## Deployment on a UAS
+- Automatic selection of predefined terrains after the required number of images for a particular terrain have been generated 
+ 
+## Deep Network Training
+- Use of TrainGen Images to Seed a Generative Adversarial Network (GAN)
+- Deployment of a deep network on a UAS, trained with images generated by TrainGen
+   
 ## Integration with Unity's ML-Agents Tool
 ![](docs/ml-agents_integration.jpg "ML-Agents Integration")
-Unity Technologies has made available a toolkit to support the creation of machine learning algorithms that interact with the graphical content in a Unity project. Tensor Flow is used for those algorithms that use Deep Learning.  
+Unity Technologies has made available a toolkit to support the creation of machine learning algorithms that interact with the graphical content in a Unity project. TensorFlow is used for those machine learning algorithms that use Deep Learning.  
 
-In the diagram shown below TrainGen is used in a Unity project that uses ML-Agents to communicate with a Generative Adversarial Network (GAN) developed with TensorFlow, and send dynamically generated training images. The feature vector which controls the content of the generated images is formed as the output of the Image Generator network and later sent back to the Unity project to be rendered.  The Image Classifier accepts these rendered images as training input to a classifier network which attempts to classify the renered image.  The output of this classification is used as input to the Image Generator which forms another feature vector for rendering. The objective of the Image Generator network is to create images that the classifier is unable to identify.
+In the diagram shown below TrainGen is used in a Unity project with ML-Agents to communicate with a Generative Adversarial Network (GAN) developed with TensorFlow. The feature vector which controls the content of the generated images is formed as the output of the Image Generator network and later sent back to the Unity project to be rendered.  The Image Classifier accepts these rendered images as training input to a classifier network which attempts to classify the rendered image.  The output of this classification is used as input to the Image Generator which forms another feature vector for rendering. The objective of the Image Generator network is to create images that the classifier is unable to identify, thereby training the Image Classifier in an adversarial context.
 
 # Call for Collaboration
-The primary mission of AirBrain.org is to enable the creation of open source machine learning solutions for use in the aerial domain. This cannot happen without the involvement of many other collaborators from various domains, some of which are listed below. If you would like to contribute to this project, or have any ideas on how we can begin collaboration with any of the entities listed below, please post to the Issues section of github for this project. If you would prefer to communicate privately send a message to airbrain.org@gmail.com.
+The primary mission of AirBrain.org is to enable the creation of open source machine learning solutions for use in the aerial domain. This cannot happen without the involvement of many other collaborators from various domains, some of which are listed below. If you would like to contribute to this project, or have any ideas on how we can begin collaboration with any of the entities listed below, please post to the Issues section of github for this particular repo. If you would prefer to communicate privately send a message to airbrain.org@gmail.com.
 
 - Universities and government authorities conducting research on early fire detection
 - Researchers investigating the use of simulation data to train machine learning algorithms for aerial observation
