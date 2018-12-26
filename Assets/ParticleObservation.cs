@@ -2,12 +2,38 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Class added to particle systems to allow the ImageGenerator class to initiate
+/// the randomization of the particle system settings.
+/// </summary>
 public class ParticleObservation : MonoBehaviour
 {
+    /// <summary>
+    /// The percentage of random variation in the particle system Start Liftime.
+    /// </summary>
     public float m_startLifetimePercentVariation = .20f;
+
+    /// <summary>
+    /// The percentage of random variation in the particle system Start Speed.
+    /// </summary>
     public float m_startSpeedPercentVariation = .20f;
+
+    /// <summary>
+    /// The percentage of random variation in the particle system Start Size.
+    /// </summary>
     public float m_startSizePercentVariation = .20f;
+
+    /// <summary>
+    /// The percentage of random variation in the wait time used to generate
+    /// smoke after the particle system is restarted.  
+    /// </summary>
     public float m_particleFlowTimePercentVariation = .10f;
+
+    /// <summary>
+    /// The number of seconds to wait for the particle system to generate smoke
+    /// after it has been reset. This time period is accelerated by modifying the 
+    /// value of the Unity time scale in Time.timeScale.
+    /// </summary>
     public float m_waitTimeSecsForRandomize = 30;
 
     private float m_currentWaitTimeSecsForRandomize;
@@ -29,6 +55,14 @@ public class ParticleObservation : MonoBehaviour
         m_sizeBySpeed = m_ps.sizeBySpeed;
     }
 	
+    /// <summary>
+    /// Called by the ImageGenerator to determine if the radomization process for this particular Observation
+    /// is completed. A new image will not be generated until the randomization process is completed.
+    /// </summary>
+    /// <returns>
+    /// If true, the randomization process is finished and image generation may commence.
+    /// If false, the radomization process is not yet complete.
+    /// </returns>
     public bool IsRandomizeFinished()
     {
         m_currentWaitTimeSecsForRandomize -= Time.deltaTime;
@@ -45,6 +79,11 @@ public class ParticleObservation : MonoBehaviour
         return false;
     }
 
+    /// <summary>
+    /// Initiate the randomization of the appearance of the particle system for this object.  This is 
+    /// accomplished by changing the value of certain settings using random values within a predefined 
+    /// range.
+    /// </summary>
     public void Randomize()
     {
         Vector2 minMax;

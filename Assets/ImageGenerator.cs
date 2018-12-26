@@ -4,51 +4,118 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 
+/// <summary>
+/// Primary class used to control the generation of images of tagged Observations.  The camera
+/// position and orientation is randomly modified between images.  See the description of the public
+/// member variables in this class for more information on how to control image generation.
+/// </summary>
 public class ImageGenerator : MonoBehaviour
 {
+    /// <summary>
+    /// Default range in degrees of the camera yaw, randomized during image capture.
+    /// </summary>
     public Vector2 m_angleRangeDegrees = new Vector2(-90f, 90f);
+
+    /// <summary>
+    /// Default range in degrees of the camera pitch, randomized during image capture.
+    /// </summary>
     public Vector2 m_elevationRangeDegrees = new Vector2(-5f, 5f);
 
+    /// <summary>
+    /// Default range in meters of the local distance of the camera from the parent (or pivot) object.
+    /// </summary>
     public Vector2 m_distanceRangeMeters = new Vector2(-200.0f, 200.0f);
+
+    /// <summary>
+    /// Default range in meters of the local lateral offset of the camera from the parent (or pivot) object.
+    /// </summary>
     public Vector2 m_offsetRangeMeters = new Vector2(-200.0f, 200.0f);
+
+    /// <summary>
+    /// Default range in meters of the local height of the camera from the parent (or pivot) object.
+    /// </summary>
     public Vector2 m_altitudeRangeMeters = new Vector2(-20.0f, 20.0f);
 
     public enum Format { RAW, JPG, PNG };
+
+    /// <summary>
+    /// Default file format of the image captured.
+    /// </summary>
     public Format m_format = Format.JPG;
+
+    /// <summary>
+    /// Default X resolution in pixels of the image captured.
+    /// </summary>
     public int m_xResolution = 1024;
+
+    /// <summary>
+    /// Default Y resolution in pixels of the image captured.
+    /// </summary>
     public int m_yResolution = 768;
 
     public float m_orbitDampening = 10f;
     public float m_scrollDampening = 6f;
 
+    /// <summary>
+    /// Tag name of the objects to be used for image capture. Images are captured for all objects
+    /// with this tag.
+    /// </summary>
     public string m_observedObjectTag = "Smoke";
 
+    /// <summary>
+    /// If set to true, the next image is captured without the use of the right-shift key. Otherwise
+    /// the right-shift key must be pressed to initiate the next image capture.
+    /// </summary>
     public bool m_enableAutoImageCapture = false;
+
+    /// <summary>
+    /// If set to true, movement of the camera to the next randomly generated position occurs with 
+    /// dampening in effect to avoid the appearance of an instant change in the camera orientation.
+    /// </summary>
     public bool m_enableMovementDampening = true;
 
+    /// <summary>
+    /// The default number of images to generate for each object ("Observation")
+    /// </summary>    
     public int m_maxImagesPerObservation = 5;
+
+    /// <summary>
+    /// The proportion of the maximum number of images generated for each Observation that must contain
+    /// a visible object.
+    /// </summary>
     public float m_visibilityProportion = 0.5f;
     public bool m_isObservedVisible;
 
-    // Offset from the observed object(s) of the pivot point.  This is used to position the
-    // pivot object relative to the observed object(s).
-    //
-    // Default value: new Vector3((float)282.7, (float)401.4, (float)-411.7)
+    /// <summary>
+    /// Offset from the observed object(s) of the pivot point.  This is used to position the
+    /// pivot object relative to the observed object (s).
+    /// 
+    /// Default value: new Vector3((float)282.7, (float)401.4, (float)-411.7)
+    /// </summary>
     public Vector3 m_observedOffset = new Vector3(282.7f, 401.4f, -411.7f);
 
-    // Retain the initial camera (not pivot) orientation, in case the camera is moved manually.
-    //
-    // Default value: new Vector3(7f, 285f, -23f)
+    /// <summary>
+    /// Retain the initial camera (not pivot) orientation, in case the camera is moved manually.
+    ///
+    /// Default value: new Vector3(7f, 285f, -23f)
+    /// </summary>
     public Vector3 m_initialLocalRotation = new Vector3(7f, 285f, -23f);
 
-    // Offset from the pivot point, acting as the parent of the camera object.  This
-    // is used to position the camera object.
-    // Default value: new Vector3((float)192.0, (float)51.0, (float)-446.0);
+    
+    /// <summary>
+    /// Offset from the pivot point, acting as the parent of the camera object.  This
+    /// is used to position the camera object.
+    /// 
+    /// Default value: new Vector3((float)192.0, (float)51.0, (float)-446.0);
+    /// </summary>
     public Vector3 m_pivotOffset = new Vector3(192.0f, 51.0f, -446.0f);
 
-    // The initial orientation of the pivot object.  This is used to control the rotation
-    // of the camera relative to the pivot object.
-    // Default value: new Vector3((float)-24.0, (float)451.0, (float)25.0);
+    /// <summary>
+    /// The initial orientation of the pivot object.  This is used to control the rotation
+    /// of the camera relative to the pivot object.
+    /// 
+    /// Default value: new Vector3((float)-24.0, (float)451.0, (float)25.0);
+    /// </summary>
     public Vector3 m_pivotRotation = new Vector3(-24.0f, 451.0f, 25.0f);
 
     private string m_folderBase;
@@ -71,6 +138,10 @@ public class ImageGenerator : MonoBehaviour
 
     private System.Random m_random = new System.Random();
 
+    /// <summary>
+    /// The states defined for image generation. Transition occurs in a callback function
+    /// called by the Unity game engine.
+    /// </summary>
     private enum CameraState
     {
         Error,
@@ -79,13 +150,12 @@ public class ImageGenerator : MonoBehaviour
         StartMotion,
         InMotion,
         Rendering,
-        PositionReached,
+        Rendered,
         ImageCaptured,
     }
     private CameraState m_cameraState;
     private bool m_autoImageCaptureState;
 
-    // Use this for initialization
     void Start()
     {
         m_camera = GetComponentInParent<Camera>();
@@ -107,6 +177,10 @@ public class ImageGenerator : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Contains the implementation of the state machine used to control the generation of images for 
+    /// each observation.
+    /// </summary>
     public void LateUpdate()
     {
         switch (m_cameraState)
@@ -142,7 +216,7 @@ public class ImageGenerator : MonoBehaviour
                 m_cameraState = WaitForRandomize();
                 break;
 
-            case CameraState.PositionReached:
+            case CameraState.Rendered:
                 m_cameraState = SaveCameraImage();
                 break;
 
@@ -194,18 +268,6 @@ public class ImageGenerator : MonoBehaviour
         {
             m_observed[m_indexObserved].SetActive(false);
             m_isObservedVisible = false;
-        }
-
-        // If the observed can be seen, then randomize its appearance. The observed may take time to complete
-        // the change in it's appearance, and we will wait in the state machine.
-        if (m_isObservedVisible)
-        {
-            // If the observed object is a particle system, then use the default Randomization member function.
-            ParticleObservation po = m_observed[m_indexObserved].GetComponent<ParticleObservation>();
-            if (po != null)
-            {
-                po.Randomize();
-            }
         }
 
         return CameraState.StartMotion;
@@ -296,15 +358,25 @@ public class ImageGenerator : MonoBehaviour
                     return CameraState.StartMotion;
                 }
 
+                // If the observed object is a particle system, then use the default Randomization member function.
+                ParticleObservation po = m_observed[m_indexObserved].GetComponent<ParticleObservation>();
+                if (po != null)
+                {
+                    // Since the observed can be seen, then randomize its appearance. The observed may take time to complete
+                    // the change in it's appearance, so we will wait in the state machine using CameraState.Rendering.
+                    po.Randomize();
+                }
+
                 m_visibleCount++;
                 Debug.Log(string.Format("Ready for rendering, observation #:{0}", m_visibleCount));
+
                 // Allow time for the observed to finalize it's appearance.
                 return CameraState.Rendering;
             }
             else
             {
                 // The observed is invisible, so skip rendering.
-                return CameraState.PositionReached;
+                return CameraState.Rendered;
             }
         }
 
@@ -319,7 +391,7 @@ public class ImageGenerator : MonoBehaviour
         {
             if (po.IsRandomizeFinished())
             {
-                return CameraState.PositionReached;
+                return CameraState.Rendered;
             }
             else
             {
@@ -327,7 +399,7 @@ public class ImageGenerator : MonoBehaviour
             }
         }
 
-        return CameraState.PositionReached;
+        return CameraState.Rendered;
     }
 
     private CameraState SaveCameraImage()
