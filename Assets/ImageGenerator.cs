@@ -4,6 +4,13 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 
+// TODO-JYW-LEFT-OFF: 
+// Create additional observation objects to randomize each of the following:
+// Clouds
+// Lighting
+// Weather (wind)
+// Larger range of pivot
+
 /// <summary>
 /// Primary class used to control the generation of images of tagged Observations.  The camera
 /// position and orientation is randomly modified between images.  See the description of the public
@@ -80,6 +87,11 @@ public class ImageGenerator : MonoBehaviour
     public int m_maxImagesPerObservation = 5;
 
     /// <summary>
+    /// The max number of observations to generate.
+    /// </summary>
+    public int m_maxNumberOfObservations = 10000;
+
+    /// <summary>
     /// The proportion of the maximum number of images generated for each Observation that must contain
     /// a visible object.
     /// </summary>
@@ -100,7 +112,6 @@ public class ImageGenerator : MonoBehaviour
     /// Default value: new Vector3(7f, 285f, -23f)
     /// </summary>
     public Vector3 m_initialLocalRotation = new Vector3(7f, 285f, -23f);
-
     
     /// <summary>
     /// Offset from the pivot point, acting as the parent of the camera object.  This
@@ -125,6 +136,8 @@ public class ImageGenerator : MonoBehaviour
 
     private Camera m_camera;
     private RenderTexture m_renderTexture;
+    private Texture2D m_image;
+    private Rect m_imageRect;
 
     private Vector3 m_targetRotation;
     private Quaternion m_targetRotationQt;
@@ -134,6 +147,7 @@ public class ImageGenerator : MonoBehaviour
     private int m_indexObserved;
     private int m_imageCount;
     private int m_visibleCount;
+    private int m_totalNumberOfObservations;
     private Vector3 m_pivotPosition;
 
     private System.Random m_random = new System.Random();
@@ -161,6 +175,8 @@ public class ImageGenerator : MonoBehaviour
         m_camera = GetComponentInParent<Camera>();
         m_cameraState = CameraState.Uninitialized;
         m_renderTexture = new RenderTexture(m_xResolution, m_yResolution, 24);
+        m_image = new Texture2D(m_xResolution, m_yResolution, TextureFormat.RGB24, false);
+        m_imageRect = new Rect(0, 0, m_xResolution, m_yResolution);
 
         var observed = GameObject.FindGameObjectsWithTag(m_observedObjectTag);
         m_observed.AddRange(observed);
@@ -192,7 +208,10 @@ public class ImageGenerator : MonoBehaviour
             case CameraState.Stopped:
                 if (Input.GetKeyDown(KeyCode.RightShift) || m_autoImageCaptureState)
                 {
-                    m_cameraState = SelectObservation();
+                    if (m_totalNumberOfObservations < m_maxNumberOfObservations)
+                    {
+                        m_cameraState = SelectObservation();
+                    }
                 }
                 break;
 
@@ -222,7 +241,7 @@ public class ImageGenerator : MonoBehaviour
 
             case CameraState.ImageCaptured:
                 m_cameraState = CameraState.Stopped;
-                Debug.Log(string.Format("Image count: {0}, visible count: {1}", m_imageCount, m_visibleCount));
+                Debug.Log(string.Format("Observation count: {0}, image count: {1}, visible count: {2}", m_totalNumberOfObservations, m_imageCount, m_visibleCount));
                 break;
 
             case CameraState.Error:
@@ -236,6 +255,7 @@ public class ImageGenerator : MonoBehaviour
         m_imageCount = 0;
         m_indexObserved = 0;
         m_visibleCount = 0;
+        m_totalNumberOfObservations = 0;
 
         // Make the first observed visible.
         m_observed[m_indexObserved].SetActive(true);
@@ -412,22 +432,26 @@ public class ImageGenerator : MonoBehaviour
 
         // Render the camera image from the cameras "targetTexture" and restore the active texture to it's original value.
         m_camera.Render();
-        Texture2D image = new Texture2D(m_xResolution, m_yResolution, TextureFormat.RGB24, false);
-        image.ReadPixels(new Rect(0, 0, m_xResolution, m_yResolution), 0, 0);
-        image.Apply();
+        // TODO-JYW: TESTING-TESTIGN
+        //        Texture2D image = new Texture2D(m_xResolution, m_yResolution, TextureFormat.RGB24, false);
+        // new Rect(0, 0, m_xResolution, m_yResolution)
+        m_image.ReadPixels(m_imageRect, 0, 0);
+        m_image.Apply();
         RenderTexture.active = currentRT;
         m_camera.targetTexture = null;
 
         // Encode texture into PNG data.
-        byte[] bytes = image.EncodeToPNG();
+        // TODO-JYW: TESTING-TESTING
+        //        byte[] bytes = image.EncodeToPNG();
+        byte[] bytes = m_image.EncodeToPNG();
 
         // Save to a file.
-        string filename = CreateUniqueFilename(Convert.ToInt32(image.width), Convert.ToInt32(image.height));
-
-        Debug.Log(string.Format("Saving image file to: {0}", filename));
+        string filename = CreateUniqueFilename(Convert.ToInt32(m_image.width), Convert.ToInt32(m_image.height));
         System.IO.File.WriteAllBytes(filename, bytes);
 
         m_imageCount++;
+        m_totalNumberOfObservations++;
+
         return CameraState.ImageCaptured;
     }
 
@@ -472,7 +496,8 @@ public class ImageGenerator : MonoBehaviour
         }
 
         // Use width, height, and counter for unique file name
-        var filename = string.Format("{0}/screen_{1}x{2}_{3}.{4}", folder, width, height, m_fileCounter, m_format.ToString().ToLower());
+        var filename = string.Format("{0}/screen_{1}x{2}__{3}_{4}.{5}", folder, width, height, 
+                DateTime.Now.ToString("HH-mm-ss"), m_fileCounter, m_format.ToString().ToLower());
 
         // Up counter for next call
         ++m_fileCounter;
