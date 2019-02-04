@@ -21,7 +21,7 @@ public class ImageGenerator : MonoBehaviour
     /// <summary>
     /// Default range in degrees of the camera yaw, randomized during image capture.
     /// </summary>
-    public Vector2 m_angleRangeDegrees = new Vector2(-90f, 90f);
+    public Vector2 m_angleRangeDegrees = new Vector2(-180f, 180f);
 
     /// <summary>
     /// Default range in degrees of the camera pitch, randomized during image capture.
@@ -165,6 +165,7 @@ public class ImageGenerator : MonoBehaviour
         InMotion,
         Rendering,
         Rendered,
+        Validated,
         ImageCaptured,
     }
     private CameraState m_cameraState;
@@ -184,6 +185,12 @@ public class ImageGenerator : MonoBehaviour
         {
             Debug.Log(string.Format("No '{0}' tagged objects located.", m_observedObjectTag));
             return;
+        }
+
+        // Attach colliders to each observed object.
+        foreach (GameObject go in observed)
+        {
+            go.AddComponent<BoxCollider>();
         }
 
         // Hide all of the observed objects.
@@ -236,6 +243,10 @@ public class ImageGenerator : MonoBehaviour
                 break;
 
             case CameraState.Rendered:
+                m_cameraState = ValidateImage();
+                break;
+
+            case CameraState.Validated:
                 m_cameraState = SaveCameraImage();
                 break;
 
@@ -324,27 +335,7 @@ public class ImageGenerator : MonoBehaviour
 
         return CameraState.InMotion;
     }
-
-    private bool IsVisible()
-    {
-        var planes = GeometryUtility.CalculateFrustumPlanes(m_camera);
-
-        var position = m_observed[m_indexObserved].transform.position;
-        bool observedVisible = true;
-        foreach (var plane in planes)
-        {
-            if (plane.GetDistanceToPoint(position) < 0)
-            {
-                observedVisible = false;
-                break;
-            }
-        }
-        if (observedVisible)
-            return true;
-
-        return false;
-    }
-    
+   
     private CameraState UpdateMoveCamera()
     {
         if (m_enableMovementDampening)
@@ -371,13 +362,6 @@ public class ImageGenerator : MonoBehaviour
             // Is the observed visible, but invisible because of a change in camera position?
             if (m_isObservedVisible)
             {
-                if (!IsVisible())
-                {
-                    Debug.Log("Looking for a field of view WITH observations.");
-                    // Move to a different position.
-                    return CameraState.StartMotion;
-                }
-
                 // If the observed object is a particle system, then use the default Randomization member function.
                 ParticleObservation po = m_observed[m_indexObserved].GetComponent<ParticleObservation>();
                 if (po != null)
@@ -386,9 +370,6 @@ public class ImageGenerator : MonoBehaviour
                     // the change in it's appearance, so we will wait in the state machine using CameraState.Rendering.
                     po.Randomize();
                 }
-
-                m_visibleCount++;
-                Debug.Log(string.Format("Ready for rendering, observation #:{0}", m_visibleCount));
 
                 // Allow time for the observed to finalize it's appearance.
                 return CameraState.Rendering;
@@ -421,6 +402,26 @@ public class ImageGenerator : MonoBehaviour
 
         return CameraState.Rendered;
     }
+
+    private CameraState ValidateImage()
+    {
+        // Is the observation visible?
+        if (m_isObservedVisible)
+        { 
+            // If the object outside the FOV?
+            // TODO-JYW: LEFT-OFF: Make the percentage a property of the ParticleObservation object.
+            if (!GameObjectUtils.IsInside(m_camera, m_observed[m_indexObserved], 0.50f))
+            {
+                Debug.Log("Looking for a field of view WITH observations.");
+                // Yes, so move to a different position.
+                return CameraState.StartMotion;
+            }
+            m_visibleCount++;
+            Debug.Log(string.Format("Ready for image capture, observation #:{0}", m_visibleCount));
+        }
+
+        return CameraState.Validated;
+    } 
 
     private CameraState SaveCameraImage()
     {
