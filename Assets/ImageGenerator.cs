@@ -193,6 +193,13 @@ public class ImageGenerator : MonoBehaviour
             go.AddComponent<BoxCollider>();
         }
 
+        // Remove the rotation of each particle system to allow the reported world
+        // coordinates of each particle to align with the world's coordinate system.
+        foreach (GameObject go in observed)
+        {
+            go.transform.rotation = Quaternion.identity; 
+        }
+
         // Hide all of the observed objects.
         foreach (GameObject go in observed)
         {
@@ -410,7 +417,7 @@ public class ImageGenerator : MonoBehaviour
         { 
             // If the object outside the FOV?
             // TODO-JYW: LEFT-OFF: Make the percentage a property of the ParticleObservation object.
-            if (!GameObjectUtils.IsInside(m_camera, m_observed[m_indexObserved], 0.50f))
+            if (!GameObjectUtils.IsInsidePercent(m_camera, m_observed[m_indexObserved]))
             {
                 Debug.Log("Looking for a field of view WITH observations.");
                 // Yes, so move to a different position.

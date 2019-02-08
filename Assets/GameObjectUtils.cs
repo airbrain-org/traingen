@@ -23,7 +23,7 @@ public class GameObjectUtils
         Outside
     }
 
-    public static bool IsInside(Camera camera, GameObject go, float percent)
+    public static bool IsInsidePercent(Camera camera, GameObject go)
     {
         ParticleSystem m_System = null;
         ParticleSystem.Particle[] m_Particles = null;
@@ -33,6 +33,13 @@ public class GameObjectUtils
 
         if (m_Particles == null || m_Particles.Length < m_System.main.maxParticles)
             m_Particles = new ParticleSystem.Particle[m_System.main.maxParticles];
+
+        ParticleObservation po = go.GetComponent<ParticleObservation>();
+        if (po == null)
+        {
+            Debug.Log("Observation does not contain a ParticleObservation component.");
+            return false;
+        }
 
         var m_Renderer = go.GetComponent<Renderer>();
         if (!m_Renderer.isVisible)
@@ -52,10 +59,18 @@ public class GameObjectUtils
         //            return false;
         //        }
 
-        var planes = GeometryUtility.CalculateFrustumPlanes(camera);
+//        var planes = GeometryUtility.CalculateFrustumPlanes(camera);
+        //        foreach (var plane in planes)
+        //        {
+//        Plane[] planes = new Plane[1];
+//        planes[0].SetNormalAndPosition(camera.transform.forward, camera.transform.position);
+//        }
 
-        // Calculate the total number of viewable active particles.
+            // Calculate the total number of viewable active particles.
         int numActiveParticles = 0;
+        int numInactiveParticles = 0;
+        int isBehindPlaneCount = 0;
+        int isOffscreenCount = 0;
         for (int i = 0; i < numParticlesAlive; i++)
         {
             //            Vector3 screenPoint = camera.WorldToViewportPoint(m_Particles[i].position);
@@ -68,37 +83,70 @@ public class GameObjectUtils
             //                screenPoint.x >= 0 && screenPoint.x < 1024 &&
             //                screenPoint.y >= 0 && screenPoint.y < 768)
             bool isBehindPlane = false;
-            foreach (var plane in planes)
+            Vector3 cameraNormal = camera.transform.TransformDirection(Vector3.forward);
+            Vector3 vectorFromCamera = m_Particles[i].position - camera.transform.position;
+            float cameraNormalDot = Vector3.Dot(cameraNormal, vectorFromCamera);
+
+            if (cameraNormalDot <= 0)
+//            if (vectorFromCamera.z <= 0)
             {
-                Vector3 particleViewport = camera.WorldToViewportPoint(m_Particles[i].position);
-                //                if (plane.GetDistanceToPoint(m_Particles[i].position) < 0)
-                if (plane.GetDistanceToPoint(particleViewport) < 0)
-                {
-                    isBehindPlane = true;
-                    break;
-                }
+                isBehindPlane = true;
+                isBehindPlaneCount++;
             }
+
+//            foreach (var plane in planes)
+//            {
+            // Vector3 particleViewport = camera.WorldToViewportPoint(m_Particles[i].position);
+            //                Vector3 particleViewport = camera.WorldToScreenPoint(m_Particles[i].position);
+            //                Vector3 particleViewport = m_Particles[i].position;
+//                if (plane.GetDistanceToPoint(m_Particles[i].position) < 0)
+            //                if (plane.GetDistanceToPoint(particleViewport) < 0)
+//                {
+//                    isBehindPlane = true;
+//                    break;
+//                }
+//            }
 
             bool isOffscreen = false;
-            Vector3 particleScreen = camera.WorldToScreenPoint(m_Particles[i].position);
-            if (particleScreen.x >= 1024 || particleScreen.x < 0 ||
-                particleScreen.y >= 768 || particleScreen.y < 0 ||
-                particleScreen.z < 1000 || particleScreen.z > 3000 )
+            //            Vector3 particleScreen = camera.WorldToScreenPoint(m_Particles[i].position);
+            Vector3 particleScreen = camera.WorldToViewportPoint(m_Particles[i].position);
+            //            if (particleScreen.x >= 1024 || particleScreen.x < 0 ||
+            //                particleScreen.y >= 768 || particleScreen.y < 0 ||
+            //                particleScreen.z < 100 || particleScreen.z > 6000)
+            if (particleScreen.x < 0 || particleScreen.x > 1 ||
+                particleScreen.y < 0 || particleScreen.y > 1)
+//                particleScreen.z < 100 || particleScreen.z > 6000)
             {
                 isOffscreen = true;
+                isOffscreenCount++;
             }
 
-            if (!isBehindPlane && !isOffscreen)
             //            if (!isBehindPlane && !isOffscreen)
+//            if (!isOffscreen)
+            if (!isBehindPlane && !isOffscreen)
             {
                 numActiveParticles++;
             }
-        } 
+            else
+            {
+                numInactiveParticles++;
+            }
+        }
+
+        // TODO-JYW: TESTING-TESTING
+//        int temp = numActiveParticles;
+//        numActiveParticles = numInactiveParticles;
+//        numInactiveParticles = temp;
 
         // Is the number of active particles high enough?
-        Debug.Log(string.Format("Active: {0}, Max: {1}, Percent: {2}", numActiveParticles,
-            m_System.main.maxParticles, (float)numActiveParticles / (float)m_System.main.maxParticles));
-        return ((float)numActiveParticles / (float)m_System.main.maxParticles) >= percent;
+        Debug.Log(string.Format("Behind screen: {0}, Off screen: {1}, Active: {2}, Max: {3}, Percent: {4}", 
+            isBehindPlaneCount,
+            isOffscreenCount,
+            numActiveParticles,
+            (float)(numActiveParticles + numInactiveParticles), 
+            (float)numActiveParticles / (float)(numActiveParticles + numInactiveParticles)));
+
+        return ((float)numActiveParticles / (float)(numActiveParticles + numInactiveParticles)) >= po.m_percentVisible;
     }
 
     /// <summary>

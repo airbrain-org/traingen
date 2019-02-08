@@ -36,6 +36,12 @@ public class ParticleObservation : MonoBehaviour
     /// </summary>
     public float m_waitTimeSecsForRandomize = 30;
 
+    /// <summary>
+    /// The percent of particles that should be visible before an image of the
+    /// scene is captured.
+    /// </summary>
+    public float m_percentVisible = 0.50f;
+
     private float m_currentWaitTimeSecsForRandomize;
     private ParticleSystem m_ps;
     private ParticleSystem.MainModule m_main;
