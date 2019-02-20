@@ -151,6 +151,7 @@ public class ImageGenerator : MonoBehaviour
     private Vector3 m_pivotPosition;
 
     private System.Random m_random = new System.Random();
+    private GameObjectUtils m_utils = new GameObjectUtils();
 
     /// <summary>
     /// The states defined for image generation. Transition occurs in a callback function
@@ -193,11 +194,17 @@ public class ImageGenerator : MonoBehaviour
             go.AddComponent<BoxCollider>();
         }
 
-        // Remove the rotation of each particle system to allow the reported world
-        // coordinates of each particle to align with the world's coordinate system.
+        // Configure the particle system of each observed object to use world coordinates.
         foreach (GameObject go in observed)
         {
-            go.transform.rotation = Quaternion.identity; 
+            ParticleSystem ps = go.GetComponent<ParticleSystem>();
+            if (ps == null)
+            {
+                Debug.Log("ERROR: Observed object is not a particle system.");
+                continue;
+            }
+            var main = ps.main;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
         }
 
         // Hide all of the observed objects.
@@ -289,6 +296,10 @@ public class ImageGenerator : MonoBehaviour
         if (m_imageCount >= m_maxImagesPerObservation)
         {
             m_observed[m_indexObserved].SetActive(false);
+            // TODO-JYW: TESTING-TESTING:
+            // Rotate the game object to align with camera.
+//            m_observed[m_indexObserved].transform.Rotate(m_camera.transform.rotation.eulerAngles);
+
             m_imageCount = 0;
             m_visibleCount = 0;
 
@@ -414,10 +425,9 @@ public class ImageGenerator : MonoBehaviour
     {
         // Is the observation visible?
         if (m_isObservedVisible)
-        { 
+        {
             // If the object outside the FOV?
-            // TODO-JYW: LEFT-OFF: Make the percentage a property of the ParticleObservation object.
-            if (!GameObjectUtils.IsInsidePercent(m_camera, m_observed[m_indexObserved]))
+            if (!m_utils.IsInsidePercent(m_camera, m_observed[m_indexObserved]))
             {
                 Debug.Log("Looking for a field of view WITH observations.");
                 // Yes, so move to a different position.
