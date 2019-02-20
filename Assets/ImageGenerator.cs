@@ -21,7 +21,7 @@ public class ImageGenerator : MonoBehaviour
     /// <summary>
     /// Default range in degrees of the camera yaw, randomized during image capture.
     /// </summary>
-    public Vector2 m_angleRangeDegrees = new Vector2(-90f, 90f);
+    public Vector2 m_angleRangeDegrees = new Vector2(-180f, 180f);
 
     /// <summary>
     /// Default range in degrees of the camera pitch, randomized during image capture.
@@ -151,6 +151,7 @@ public class ImageGenerator : MonoBehaviour
     private Vector3 m_pivotPosition;
 
     private System.Random m_random = new System.Random();
+    private GameObjectUtils m_utils = new GameObjectUtils();
 
     /// <summary>
     /// The states defined for image generation. Transition occurs in a callback function
@@ -165,6 +166,7 @@ public class ImageGenerator : MonoBehaviour
         InMotion,
         Rendering,
         Rendered,
+        Validated,
         ImageCaptured,
     }
     private CameraState m_cameraState;
@@ -184,6 +186,25 @@ public class ImageGenerator : MonoBehaviour
         {
             Debug.Log(string.Format("No '{0}' tagged objects located.", m_observedObjectTag));
             return;
+        }
+
+        // Attach colliders to each observed object.
+        foreach (GameObject go in observed)
+        {
+            go.AddComponent<BoxCollider>();
+        }
+
+        // Configure the particle system of each observed object to use world coordinates.
+        foreach (GameObject go in observed)
+        {
+            ParticleSystem ps = go.GetComponent<ParticleSystem>();
+            if (ps == null)
+            {
+                Debug.Log("ERROR: Observed object is not a particle system.");
+                continue;
+            }
+            var main = ps.main;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
         }
 
         // Hide all of the observed objects.
@@ -236,6 +257,10 @@ public class ImageGenerator : MonoBehaviour
                 break;
 
             case CameraState.Rendered:
+                m_cameraState = ValidateImage();
+                break;
+
+            case CameraState.Validated:
                 m_cameraState = SaveCameraImage();
                 break;
 
@@ -271,6 +296,10 @@ public class ImageGenerator : MonoBehaviour
         if (m_imageCount >= m_maxImagesPerObservation)
         {
             m_observed[m_indexObserved].SetActive(false);
+            // TODO-JYW: TESTING-TESTING:
+            // Rotate the game object to align with camera.
+//            m_observed[m_indexObserved].transform.Rotate(m_camera.transform.rotation.eulerAngles);
+
             m_imageCount = 0;
             m_visibleCount = 0;
 
@@ -324,27 +353,7 @@ public class ImageGenerator : MonoBehaviour
 
         return CameraState.InMotion;
     }
-
-    private bool IsVisible()
-    {
-        var planes = GeometryUtility.CalculateFrustumPlanes(m_camera);
-
-        var position = m_observed[m_indexObserved].transform.position;
-        bool observedVisible = true;
-        foreach (var plane in planes)
-        {
-            if (plane.GetDistanceToPoint(position) < 0)
-            {
-                observedVisible = false;
-                break;
-            }
-        }
-        if (observedVisible)
-            return true;
-
-        return false;
-    }
-    
+   
     private CameraState UpdateMoveCamera()
     {
         if (m_enableMovementDampening)
@@ -371,13 +380,6 @@ public class ImageGenerator : MonoBehaviour
             // Is the observed visible, but invisible because of a change in camera position?
             if (m_isObservedVisible)
             {
-                if (!IsVisible())
-                {
-                    Debug.Log("Looking for a field of view WITH observations.");
-                    // Move to a different position.
-                    return CameraState.StartMotion;
-                }
-
                 // If the observed object is a particle system, then use the default Randomization member function.
                 ParticleObservation po = m_observed[m_indexObserved].GetComponent<ParticleObservation>();
                 if (po != null)
@@ -386,9 +388,6 @@ public class ImageGenerator : MonoBehaviour
                     // the change in it's appearance, so we will wait in the state machine using CameraState.Rendering.
                     po.Randomize();
                 }
-
-                m_visibleCount++;
-                Debug.Log(string.Format("Ready for rendering, observation #:{0}", m_visibleCount));
 
                 // Allow time for the observed to finalize it's appearance.
                 return CameraState.Rendering;
@@ -421,6 +420,25 @@ public class ImageGenerator : MonoBehaviour
 
         return CameraState.Rendered;
     }
+
+    private CameraState ValidateImage()
+    {
+        // Is the observation visible?
+        if (m_isObservedVisible)
+        {
+            // If the object outside the FOV?
+            if (!m_utils.IsInsidePercent(m_camera, m_observed[m_indexObserved]))
+            {
+                Debug.Log("Looking for a field of view WITH observations.");
+                // Yes, so move to a different position.
+                return CameraState.StartMotion;
+            }
+            m_visibleCount++;
+            Debug.Log(string.Format("Ready for image capture, observation #:{0}", m_visibleCount));
+        }
+
+        return CameraState.Validated;
+    } 
 
     private CameraState SaveCameraImage()
     {

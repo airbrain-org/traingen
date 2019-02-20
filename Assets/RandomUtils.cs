@@ -19,7 +19,8 @@ public class RandomUtils
     /// </returns>
     public static float GenerateRandom(Vector2 range)
     {
-        return UnityEngine.Random.Range(range.x, range.y);
+        float return_value = UnityEngine.Random.Range(range.x, range.y);
+        return return_value;
     }
 
     /// <summary>
