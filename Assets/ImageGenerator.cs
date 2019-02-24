@@ -296,10 +296,6 @@ public class ImageGenerator : MonoBehaviour
         if (m_imageCount >= m_maxImagesPerObservation)
         {
             m_observed[m_indexObserved].SetActive(false);
-            // TODO-JYW: TESTING-TESTING:
-            // Rotate the game object to align with camera.
-//            m_observed[m_indexObserved].transform.Rotate(m_camera.transform.rotation.eulerAngles);
-
             m_imageCount = 0;
             m_visibleCount = 0;
 
@@ -340,7 +336,6 @@ public class ImageGenerator : MonoBehaviour
         m_targetRotation.x = m_pivotRotation.x + RandomUtils.GenerateRandom(m_elevationRangeDegrees);
         m_targetRotation.y = m_pivotRotation.y + RandomUtils.GenerateRandom(m_angleRangeDegrees);
         m_targetRotation.z = m_pivotRotation.z;
-
         m_targetRotationQt = Quaternion.Euler(m_targetRotation.x, m_targetRotation.y, m_targetRotation.z);
 
         m_targetTransform.x = m_pivotOffset.x + RandomUtils.GenerateRandom(m_offsetRangeMeters);
@@ -373,9 +368,7 @@ public class ImageGenerator : MonoBehaviour
         if (Mathf.Abs(transform.localPosition.x - m_targetTransform.x) < 1.0 &&
             Mathf.Abs(transform.localPosition.y - m_targetTransform.y) < 1.0 &&
             Mathf.Abs(transform.localPosition.z - m_targetTransform.z) < 1.0 &&
-            Mathf.Abs(transform.parent.rotation.x - m_targetRotationQt.x) < 1.0 &&
-            Mathf.Abs(transform.parent.rotation.y - m_targetRotationQt.y) < 1.0 &&
-            Mathf.Abs(transform.parent.rotation.z - m_targetRotationQt.z) < 1.0)
+            Quaternion.Angle(transform.parent.rotation, m_targetRotationQt) < 1.0)
         {
             // Is the observed visible, but invisible because of a change in camera position?
             if (m_isObservedVisible)
@@ -450,17 +443,12 @@ public class ImageGenerator : MonoBehaviour
 
         // Render the camera image from the cameras "targetTexture" and restore the active texture to it's original value.
         m_camera.Render();
-        // TODO-JYW: TESTING-TESTIGN
-        //        Texture2D image = new Texture2D(m_xResolution, m_yResolution, TextureFormat.RGB24, false);
-        // new Rect(0, 0, m_xResolution, m_yResolution)
         m_image.ReadPixels(m_imageRect, 0, 0);
         m_image.Apply();
         RenderTexture.active = currentRT;
         m_camera.targetTexture = null;
 
         // Encode texture into PNG data.
-        // TODO-JYW: TESTING-TESTING
-        //        byte[] bytes = image.EncodeToPNG();
         byte[] bytes = m_image.EncodeToPNG();
 
         // Save to a file.
