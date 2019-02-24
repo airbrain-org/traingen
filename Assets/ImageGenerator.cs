@@ -503,7 +503,7 @@ public class ImageGenerator : MonoBehaviour
 
         // Use width, height, and counter for unique file name
         var filename = string.Format("{0}/screen_{1}x{2}__{3}_{4}.{5}", folder, width, height, 
-                DateTime.Now.ToString("HH-mm-ss"), m_fileCounter, m_format.ToString().ToLower());
+                DateTime.Now.ToString("dd-MM-yyyy"), m_fileCounter, m_format.ToString().ToLower());
 
         // Up counter for next call
         ++m_fileCounter;
