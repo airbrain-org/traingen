@@ -140,3 +140,7 @@ Assets used in the example scene developed for TrainGen:
   - [Enviro Sky and Weather](https://assetstore.unity.com/packages/tools/particles-effects/enviro-sky-and-weather-33963)
   - [Realistic Smoke VFX](https://assetstore.unity.com/packages/vfx/particles/fire-explosions/realistic-smoke-vfx-58504)
   - [Large Scale Smoke](https://assetstore.unity.com/packages/vfx/particles/fire-explosions/large-scale-smoke-91966)
+
+# TODO:
+- Modify the ImageGenerator module to discard images where the camera is positioned below ground level.
+- Integrate with a GAN and the Unity ml-agent?
