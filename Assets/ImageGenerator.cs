@@ -96,7 +96,6 @@ public class ImageGenerator : MonoBehaviour
     /// a visible object.
     /// </summary>
     public float m_visibilityProportion = 0.5f;
-    public bool m_isObservedVisible;
 
     /// <summary>
     /// Offset from the observed object(s) of the pivot point.  This is used to position the
@@ -261,7 +260,11 @@ public class ImageGenerator : MonoBehaviour
                 break;
 
             case CameraState.Validated:
+                // Save two images, one with the observation in the foreground, and one without.
                 m_cameraState = SaveCameraImage();
+                m_observed[m_indexObserved].SetActive(false);
+                m_cameraState = SaveCameraImage();
+                m_observed[m_indexObserved].SetActive(true);
                 break;
 
             case CameraState.ImageCaptured:
@@ -284,7 +287,6 @@ public class ImageGenerator : MonoBehaviour
 
         // Make the first observed visible.
         m_observed[m_indexObserved].SetActive(true);
-        m_isObservedVisible = true;
 
         return CameraState.Stopped;
     }
@@ -306,13 +308,6 @@ public class ImageGenerator : MonoBehaviour
             }
             // Make the new observed visible.
             m_observed[m_indexObserved].SetActive(true);
-            m_isObservedVisible = true;
-        }
-        // Have enough visible observations been collected?
-        else if (((float)m_visibleCount / (float)m_maxImagesPerObservation) >= m_visibilityProportion)
-        {
-            m_observed[m_indexObserved].SetActive(false);
-            m_isObservedVisible = false;
         }
 
         return CameraState.StartMotion;
@@ -371,7 +366,8 @@ public class ImageGenerator : MonoBehaviour
             Quaternion.Angle(transform.parent.rotation, m_targetRotationQt) < 1.0)
         {
             // Is the observed visible, but invisible because of a change in camera position?
-            if (m_isObservedVisible)
+            //            if (m_isObservedVisible)
+            if (m_observed[m_indexObserved].activeSelf)
             {
                 // If the observed object is a particle system, then use the default Randomization member function.
                 ParticleObservation po = m_observed[m_indexObserved].GetComponent<ParticleObservation>();
@@ -417,7 +413,8 @@ public class ImageGenerator : MonoBehaviour
     private CameraState ValidateImage()
     {
         // Is the observation visible?
-        if (m_isObservedVisible)
+        //        if (m_isObservedVisible)
+        if (m_observed[m_indexObserved].activeSelf)
         {
             // If the object outside the FOV?
             if (!m_utils.IsInsidePercent(m_camera, m_observed[m_indexObserved]))
@@ -492,7 +489,8 @@ public class ImageGenerator : MonoBehaviour
         }
 
         // Segregate the images by category
-        if (m_isObservedVisible)
+        //        if (m_isObservedVisible)
+        if (m_observed[m_indexObserved].activeSelf)
         {
             folder = m_folderObserved;
         }

@@ -71,8 +71,8 @@ public class GameObjectUtils
             // Use values above between 0 and 1 to assure that the particles remain away from the edige
             // of the FOV, in this case .1 and .9.
             // TODO-JYW: Should this be parameterized?
-            if (particleScreen.x < .1 || particleScreen.x > .9 ||
-                particleScreen.y < .1 || particleScreen.y > .9)
+            if (particleScreen.x < .2 || particleScreen.x > .8 ||
+                particleScreen.y < .2 || particleScreen.y > .8 )
             {
                 isOffscreen = true;
                 isOffscreenCount++;
